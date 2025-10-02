@@ -9,12 +9,13 @@ Tutorial for running from CLI: https://www.hostinger.com/tutorials/ollama-cli-tu
 
 import os
 import xlsxwriter
+import subprocess
 #import ollama
 
 #testString = "1-2024-0733-000-001"
 #print(testString[:15])
 
-def saveOutputToExcel(imageNameArray, valueArray):
+def saveOutputToExcel(imageNameArray, valueArray, tagsArray):
     workbook = xlsxwriter.Workbook('ScriptData/ScriptOutput.xlsx')
     worksheet = workbook.add_worksheet('Output')
 
@@ -23,6 +24,7 @@ def saveOutputToExcel(imageNameArray, valueArray):
 
         worksheet.write("A" + str(row), imageNameArray[row-1])
         worksheet.write("B" + str(row), valueArray[row-1])
+        worksheet.write("C" + str(row), tagsArray[row-1])
 
     workbook.close()
 
@@ -78,27 +80,54 @@ for imageName in imageNames:
 # Therefore, the entire list always needs to be rewritten to excel
 OutputExcelColumn1 = []
 OutputExcelColumn2 = []
+OutputExcelColumn3 = []
+iteratorVar = 1
 for sameObjectArray in sameImageArrayArray:
     
     locationString = ""
     for image in sameObjectArray:
         locationString = locationString + f'"./TargetMuseumImages/{image}", '
-
-    descriptionPrompt = f"""Please describe the object in the images at the following locations: {locationString}".
-    They are all the same object, write a single description. Keep it as short as possible.
+    
+    tagPrompt = f"""Please write a short title for the object in the images at the following locations: {locationString}.
+    The images all show the same object. Remain as objective as possible. Use only a handful of words, do not write
+    complete sentences. Only write the tags asssociated with the object.
     """
+
+    descriptionPrompt = f"""Please describe the object in the images at the following locations: "{locationString}".
+    The images all show the same object, write ONLY a single description for the object. Do not describe each image. Do not
+    write anything except the description for the object. Remain as objective as possible and pay particular attention
+    to the details of the object.
+    """
+
 
     #print(descriptionPrompt)
     #quit()
 
-    inputPrompt = f'ollama run gemma3:27b "{descriptionPrompt}"'
-    print(inputPrompt)
+    inputPromptTags = f'ollama run llava "{tagPrompt}"'
+    print(tagPrompt)
 
-    response = os.system(f"{inputPrompt}")
+    responseTags = subprocess.check_output(inputPromptTags, shell=True, text=True)
+    print(responseTags)
 
-    OutputExcelColumn1.append(sameObjectArray[0])
-    OutputExcelColumn2.append(response)
-    saveOutputToExcel(OutputExcelColumn1, OutputExcelColumn2)
+    #inputPrompt = f'ollama run gemma3:27b "{descriptionPrompt}"'
+    inputPromptDescription = f'ollama run llava "{descriptionPrompt}"'
+    print(inputPromptDescription)
 
-    quit()
+    #response = os.system(f"{inputPrompt}")
+    responseDescription = subprocess.check_output(inputPromptDescription, shell=True, text=True)
+    print(responseDescription)
+
+    nameString = ""
+    for name in sameObjectArray:
+        nameString = nameString + name + ", "
+    nameString = nameString[:-2]
+
+    OutputExcelColumn1.append(nameString)
+    OutputExcelColumn2.append(responseDescription)
+    OutputExcelColumn3.append(responseTags)
+    saveOutputToExcel(OutputExcelColumn1, OutputExcelColumn2, OutputExcelColumn3)
+
+    if iteratorVar > 2:
+        quit()
+    iteratorVar = iteratorVar + 1
 
