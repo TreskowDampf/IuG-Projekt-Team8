@@ -127,7 +127,7 @@ for sameObjectArray in sameImageArrayArray:
     OutputExcelColumn3.append(responseTags)
     saveOutputToExcel(OutputExcelColumn1, OutputExcelColumn2, OutputExcelColumn3)
 
-    if iteratorVar > 2:
+    if iteratorVar > 0:
         quit()
     iteratorVar = iteratorVar + 1
 
